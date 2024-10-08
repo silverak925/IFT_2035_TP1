@@ -1,7 +1,7 @@
     -- TP-1  --- Implantation d'une sorte de Lisp          -*- coding: utf-8 -*-
     -- Joel Villeneuve - 20218950
-    -- Karim Moussa - xxxxxxxx
-    
+    -- Karim Moussa - yyyyyyyy
+
 {-# OPTIONS_GHC -Wall #-}
 --
 -- Ce fichier défini les fonctionalités suivantes:
