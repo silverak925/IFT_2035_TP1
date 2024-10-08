@@ -199,6 +199,9 @@ s2l (Snode exp1 ep2)
 s2l (Snode (Ssym "+") [e1, e2]) =
       -> error
 
+
+      
+
 -- ¡¡COMPLÉTER ICI!!
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 
