@@ -197,43 +197,53 @@ s2l (Ssym s) = Lvar s
 -- ¡¡COMPLÉTER ICI!!
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 
+Snode Ssym "if" ["<", 2, 5]
 -- exp cond
-s2l (Slist [Ssym "if", cond, e1, e2]) =
-  Ltest (s2l cond) (s2l e1) (s2l e2)
+s2l (Snode Snode node exps) = -- appel recursif
+
+s2l (Snode Ssym "+" exps) = -- addition
+s2l (Snode Ssym "-" exps) = -- soustraction
+s2l (Snode Ssym "+" exps) = -- multiplication
+-- ...
+
+
+-- s2l (Snode Snum num exps)
+--   Snode (Ssym "if" [cond, e1, e2]) =
+--   Ltest (s2l cond) (s2l e1) (s2l e2)
 
 -- exp '+' 
-s2l (Slist [Ssym "+", e1, e2]) =
-  Lsend (Lvar "+") [s2l e1, s2l e2]
+-- s2l (Ssym "+", [e1, e2]) =
+--   Lsend (Lvar "+") [s2l e1, s2l e2]
 
--- exp '-'  
-s2l (Slist [Ssym "-", e1, e2]) =
-  Lsend (Lvar "-") [s2l e1, s2l e2]
+-- -- exp '-'  
+-- s2l (Slist [Ssym "-", e1, e2]) =
+--   Lsend (Lvar "-") [s2l e1, s2l e2]
 
--- exp '*'  
-s2l (Slist [Ssym "*", e1, e2]) =
-  Lsend (Lvar "*") [s2l e1, s2l e2]
+-- -- exp '*'  
+-- s2l (Slist [Ssym "*", e1, e2]) =
+--   Lsend (Lvar "*") [s2l e1, s2l e2]
 
--- exp '/' 
-s2l (Slist [Ssym "/", e1, e2]) =
-  Lsend (Lvar "/") [s2l e1, s2l e2]
+-- -- exp '/' 
+-- s2l (Slist [Ssym "/", e1, e2]) =
+--   Lsend (Lvar "/") [s2l e1, s2l e2]
 
--- exp 'let' 
-s2l (Slist [Ssym "let", Ssym x, e1, e2]) =
-  Llet x (s2l e1) (s2l e2)
+-- -- exp 'let' 
+-- s2l (Slist [Ssym "let", Ssym x, e1, e2]) =
+--   Llet x (s2l e1) (s2l e2)
 
--- exp 'fob'  
-s2l (Slist (Ssym "fob" : Slist params : body : [])) =
-  let vars = map (\(Ssym v) -> v) params
-  in Lfob vars (s2l body)
+-- -- exp 'fob'  
+-- s2l (Slist (Ssym "fob" : Slist params : body : [])) =
+--   let vars = map (\(Ssym v) -> v) params
+--   in Lfob vars (s2l body)
 
--- exp 'fix'  
-s2l (Slist (Ssym "fix" : Slist bindings : body : [])) =
-  let bindPairs = map (\(Slist [Ssym x, expr]) -> (x, s2l expr)) bindings
-  in Lfix bindPairs (s2l body)
+-- -- exp 'fix'  
+-- s2l (Slist (Ssym "fix" : Slist bindings : body : [])) =
+--   let bindPairs = map (\(Slist [Ssym x, expr]) -> (x, s2l expr)) bindings
+--   in Lfix bindPairs (s2l body)
 
--- exp 'pour autres fonctions'  
-s2l (Slist (func : args)) =
-  Lsend (s2l func) (map s2l args)
+-- -- exp 'pour autres fonctions'  
+-- s2l (Slist (func : args)) =
+--   Lsend (s2l func) (map s2l args)
   
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 
