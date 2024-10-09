@@ -194,59 +194,41 @@ data Lexp = Lnum Int             -- Constante entière.
 s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
-s2l (Snode exp1 ep2)
 
-s2l (Snode (Ssym "+") [e1, e2]) =
-      -> error
+{-
 
+--Fonction de depart, manque autres expressions
 
-      
+s2l (Snode (Ssym "+") (e1:e2:_)) =
+  case (s2l e1, s2l e2) of
+    (Snum n1, Snum n2) -> Lnum (n1 + n2)
+    (e1', e2')         -> Lsend (Lvar "+") [e1', e2']
+
+s2l (Snode (Ssym "+") exprs) =
+  let args = map s2l exprs  -- Applique récursivement `s2l` à chaque sous-expression
+  in case allLnums args of   -- Vérifie si tous les arguments sont des `Lnum`
+       Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
+       Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
+-}
+
+s2l (Snode (Ssym "+") listExp) =
+  let args = map s2l listExp  -- Applique récursivement `s2l` à chaque sous-expression
+  in case allLnums args of   -- Vérifie si tous les arguments sont des `Lnum`
+       Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
+       Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
+
+fromVnum :: Val -> Int
+fromVnum ( Vnum n ) = n
+fromVnum _ = error " Expected an integer "
+
+-- Fonction auxiliaire pour extraire un bool éen d'une Val
+fromVbool :: Val -> Bool
+fromVbool ( Vbool b ) = b
+fromVbool _ = error " Expected a boolean "
 
 -- ¡¡COMPLÉTER ICI!!
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 
-{-
--- exp cond
-s2l (Snode [Ssym "if", cond, e1, e2]) =
-  Ltest (s2l cond) (s2l e1) (s2l e2)
-
--- exp '+' 
-s2l (Snode [Ssym "+", e1, e2]) =
-  Lsend (Lvar "+") [s2l e1, s2l e2]
-
--- exp '-'  
-s2l (Snode [Ssym "-", e1, e2]) =
-  Lsend (Lvar "-") [s2l e1, s2l e2]
-
--- exp '*'  
-s2l (Snode [Ssym "*", e1, e2]) =
-  Lsend (Lvar "*") [s2l e1, s2l e2]
-
--- exp '/' 
-s2l (Snode [Ssym "/", e1, e2]) =
-  Lsend (Lvar "/") [s2l e1, s2l e2]
-
--- exp 'let' 
-s2l (Snode [Ssym "let", Ssym x, e1, e2]) =
-  Llet x (s2l e1) (s2l e2)
-
--- exp 'fob'  
-s2l (Snode (Ssym "fob" : Snode params : body : [])) =
-  let vars = map (\(Ssym v) -> v) params
-  in Lfob vars (s2l body)
-
--- exp 'fix'  
-s2l (Snode (Ssym "fix" : Snode bindings : body : [])) =
-  let bindPairs = map (\(Snode [Ssym x, expr]) -> (x, s2l expr)) bindings
-  in Lfix bindPairs (s2l body)
-
--- exp 'pour autres fonctions'  
-s2l (Snode (func : args)) =
-  Lsend (s2l func) (map s2l args)
-  
-s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
-
--}
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --
 ---------------------------------------------------------------------------
