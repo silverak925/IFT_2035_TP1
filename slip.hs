@@ -209,7 +209,7 @@ s2l (Snode (Ssym "+") exprs) =
   in case allLnums args of   -- Vérifie si tous les arguments sont des `Lnum`
        Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
        Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
--}
+
 
 s2l (Snode (Ssym "+") listExp) =
   let args = map s2l listExp  -- Applique récursivement `s2l` à chaque sous-expression
@@ -221,10 +221,63 @@ fromVnum :: Val -> Int
 fromVnum ( Vnum n ) = n
 fromVnum _ = error " Expected an integer "
 
--- Fonction auxiliaire pour extraire un bool éen d'une Val
+-- Fonction auxiliaire pour extraire un booléen d'une Val
 fromVbool :: Val -> Bool
 fromVbool ( Vbool b ) = b
 fromVbool _ = error " Expected a boolean "
+
+-}
+
+-- Helper function to extract Int from Lnum
+getNum :: Lexp -> Maybe Int
+getNum (Lnum n) = Just n
+getNum _        = Nothing
+
+s2l (Snode (Ssym "+") listExp) =
+    let args = map s2l listExp  -- Applique récursivement `s2l` à chaque sous-expression
+    in case sequenceA (map getNum args) of
+        Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
+        Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
+
+s2l (Snode (Ssym "-") listExp) =
+    let args = map s2l listExp
+    in case sequenceA (map getNum args) of
+        Just (x:xs) -> Lnum (x - sum xs)  -- Pour la soustraction, on soustrait la somme des autres
+        Nothing      -> Lsend (Lvar "-") args
+
+s2l (Snode (Ssym "*") listExp) =
+    let args = map s2l listExp
+    in case sequenceA (map getNum args) of
+        Just nums -> Lnum (product nums)  -- Produit des entiers
+        Nothing   -> Lsend (Lvar "*") args
+
+s2l (Snode (Ssym "/") listExp) =
+    let args = map s2l listExp
+    in case sequenceA (map getNum args) of
+        Just (x:xs) -> Lnum (foldl (\acc n -> acc `div` n) x xs)  -- Division
+        Nothing      -> Lsend (Lvar "/") args
+
+s2l (Snode (Ssym "and") listExp) =
+    let args = map s2l listExp
+    in case sequenceA (map getBool args) of
+        Just bools -> Lbool (and bools)
+        Nothing    -> Lsend (Lvar "and") args
+
+s2l (Snode (Ssym "or") listExp) =
+    let args = map s2l listExp
+    in case sequenceA (map getBool args) of
+        Just bools -> Lbool (or bools)
+        Nothing    -> Lsend (Lvar "or") args
+
+s2l (Snode (Ssym "not") [e]) =
+    let arg = s2l e
+    in case arg of
+        Lbool b -> Lbool (not b)
+        _       -> Lsend (Lvar "not") [arg]
+
+s2l (Snode _ _) = error "Expression Sexp inconnue"
+s2l Snil = Lsend (Lvar "nil") []  -- Cas pour la liste vide
+s2l se = error ("Expression Sexp inconnue: " ++ show se)
 
 -- ¡¡COMPLÉTER ICI!!
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
