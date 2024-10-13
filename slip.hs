@@ -195,39 +195,26 @@ s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
 
+-- Analyse des Snodes possibles
+s2l (Snode (Ssym "if") [condition, trueBranch, falseBranch]) =
+  -- On evalue les deux possibles outcomes
+  Ltest (s2l cond) (s2l trueBranch) (s2l falseBranch)
+
+s2l (Snode (Ssym "let") [Ssym var, expr, body]) =
+  Llet var (s2l expr) (s2l body)
+
+s2l (Snode (Ssym "lambda") [Snode params, body]) =
+  Lfob (map s2lParam params) (s2l body)
+  where
+    s2lParam (Ssym v) = v
+    s2lParam _ = error "Parametre lambda invalide"
+
+s2l (Snode func args) = Lsend (s2l func) (map s2l args)
+
+-- Erreur pour tout autre expression inconnue
+s2l _ = error "Expression Sexp inconnue: " ++ show se)"
+
 {-
-
---Fonction de depart, manque autres expressions
-
-s2l (Snode (Ssym "+") (e1:e2:_)) =
-  case (s2l e1, s2l e2) of
-    (Snum n1, Snum n2) -> Lnum (n1 + n2)
-    (e1', e2')         -> Lsend (Lvar "+") [e1', e2']
-
-s2l (Snode (Ssym "+") exprs) =
-  let args = map s2l exprs  -- Applique récursivement `s2l` à chaque sous-expression
-  in case allLnums args of   -- Vérifie si tous les arguments sont des `Lnum`
-       Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
-       Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
-
-
-s2l (Snode (Ssym "+") listExp) =
-  let args = map s2l listExp  -- Applique récursivement `s2l` à chaque sous-expression
-  in case allLnums args of   -- Vérifie si tous les arguments sont des `Lnum`
-       Just nums -> Lnum (sum nums)  -- Si tous sont des entiers constants, calcule la somme
-       Nothing   -> Lsend (Lvar "+") args  -- Sinon, différer l'évaluation avec `Lsend`
-
-fromVnum :: Val -> Int
-fromVnum ( Vnum n ) = n
-fromVnum _ = error " Expected an integer "
-
--- Fonction auxiliaire pour extraire un booléen d'une Val
-fromVbool :: Val -> Bool
-fromVbool ( Vbool b ) = b
-fromVbool _ = error " Expected a boolean "
-
--}
-
 -- Helper function to extract Int from Lnum
 getNum :: Lexp -> Maybe Int
 getNum (Lnum n) = Just n
@@ -257,6 +244,11 @@ s2l (Snode (Ssym "/") listExp) =
         Just (x:xs) -> Lnum (foldl (\acc n -> acc `div` n) x xs)  -- Division
         Nothing      -> Lsend (Lvar "/") args
 
+--Prend les boolean en arguments
+getBool :: Lexp -> Maybe Bool
+getBool (Lbool b) = Just b
+getBool _         = Nothing
+
 s2l (Snode (Ssym "and") listExp) =
     let args = map s2l listExp
     in case sequenceA (map getBool args) of
@@ -275,12 +267,18 @@ s2l (Snode (Ssym "not") [e]) =
         Lbool b -> Lbool (not b)
         _       -> Lsend (Lvar "not") [arg]
 
+s2l (Snode (Ssym "let") [Snode [Snode [Ssym var, e1]], e2]) = 
+    Llet var (s2l e1) (s2l e2)
+
+s2l (Snode (Ssym "fix") [Snode bindings, body]) =
+    Lfix (map (\(Snode [Ssym v, e]) -> (v, s2l e)) bindings) (s2l body)        
+
 s2l (Snode _ _) = error "Expression Sexp inconnue"
 s2l Snil = Lsend (Lvar "nil") []  -- Cas pour la liste vide
 s2l se = error ("Expression Sexp inconnue: " ++ show se)
 
--- ¡¡COMPLÉTER ICI!!
-s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
+-}
+
 
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --
@@ -327,6 +325,31 @@ env0 = let binop f op =
 eval :: VEnv -> Lexp -> Value
 -- ¡¡ COMPLETER !!
 eval _ (Lnum n) = Vnum n
+
+eval env (Lvar v) =
+  case lookup v env of
+    Just val -> val
+    Nothing -> error ("Variable non définie: " ++ v)
+eval env (Ltest cond trueBranch falseBranch) =
+  case eval env cond of
+    Vbool True  -> eval env trueBranch
+    Vbool False -> eval env falseBranch
+    _ -> error "Condition must evaluate to a boolean"
+eval env (Lsend func args) =
+  case eval env func of
+    Vbuiltin f -> f (map (eval env) args)
+    Vfob closure params body ->
+      let argVals = map (eval env) args
+          extendedEnv = zip params argVals ++ closure
+      in eval extendedEnv body
+    _ -> error "Application requires a function"
+eval env (Llet v e1 e2) =
+  let val = eval env e1
+      extendedEnv = (v, val) : env
+  in eval extendedEnv e2
+eval env (Lfix bindings body) =
+  let recEnv = [(v, eval recEnv e) | (v, e) <- bindings] ++ env
+  in eval recEnv body
                   
 ---------------------------------------------------------------------------
 -- Toplevel                                                              --
