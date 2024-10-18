@@ -203,14 +203,6 @@ s2l (Snode (Ssym "if") [condition, trueBranch, falseBranch]) =
 s2l (Snode (Ssym "let") [Ssym var, expr, body]) =
   Llet var (s2l expr) (s2l body)
 
-s2l (Snode (Ssym "lambda") [Snode (Ssym "params") paramList, body]) =
-  Lfob (map s2lParam paramList) (s2l body)
-  where
-    s2lParam (Ssym v) = v
-    s2lParam _ = error "Paramètre lambda invalide"
-
-s2l (Snode func args) = Lsend (s2l func) (map s2l args)
-
 -- Expression fob (lambda) dans Sexp
 s2l (Snode (Ssym "fob") [Snode (Ssym "params") paramList, body]) =
   Lfob (map s2lParam paramList) (s2l body)
@@ -227,8 +219,11 @@ s2l (Snode (Ssym "fix") [Snode (Ssym "bindings") bindings, body]) =
 
 s2l Snil = error "Liste vide inattendue"
 
+s2l (Snode func args) = Lsend (s2l func) (map s2l args)
+
 -- Erreur pour tout autre expression inconnue
-s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
+
+-- s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --
 ---------------------------------------------------------------------------
