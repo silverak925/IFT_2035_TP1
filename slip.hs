@@ -194,13 +194,10 @@ data Lexp = Lnum Int             -- Constante entière.
 s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
-<<<<<<< Updated upstream
--- ¡¡COMPLÉTER ICI!!
-=======
-
 
 -- Analyse des Snodes possibles
 s2l (Snode (Ssym "if") [condition, trueBranch, falseBranch]) =
+  -- On evalue les deux possibles outcomes
   Ltest (s2l condition) (s2l trueBranch) (s2l falseBranch)
 
 s2l (Snode (Ssym "let") [Ssym var, expr, body]) =
@@ -212,6 +209,7 @@ s2l (Snode (Ssym "let") [Ssym var, expr, body]) =
 --     s2lParam (Ssym v) = v
 --     s2lParam _ = error "Paramètre lambda invalide"
 
+
 -- Expression fob (lambda) dans Sexp
 s2l (Snode (Ssym "fob") [Snode (Ssym param1) paramList, body]) =
   Lfob (param1 : (map s2lParam (paramList))) (s2l body)
@@ -219,71 +217,19 @@ s2l (Snode (Ssym "fob") [Snode (Ssym param1) paramList, body]) =
     s2lParam (Ssym v) = v
     s2lParam _ = error "Lambda invalide"
 
--- expression fix
+s2l (Snode func args) = Lsend (s2l func) (map s2l args)
+
+-- -- expression fix
 -- s2l (Snode (Ssym "fix") [Snode (Ssym "bindings") bindings, body]) =
 --   Lfix (map parseBinding bindings) (s2l body)
 --   where
 --     parseBinding (Snode (Ssym var) [expr]) = (var, s2l expr)
 --     parseBinding _ = error "fix invalide"
 
-s2l (Snode func args) = Lsend (s2l func) (map s2l args)
-
 s2l Snil = error "Liste vide inattendue"
 
 -- Erreur pour tout autre expression inconnue
->>>>>>> Stashed changes
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
-
-Snode Ssym "if" ["<", 2, 5]
--- exp cond
-s2l (Snode Snode node exps) = -- appel recursif
-
-s2l (Snode Ssym "+" exps) = -- addition
-s2l (Snode Ssym "-" exps) = -- soustraction
-s2l (Snode Ssym "+" exps) = -- multiplication
--- ...
-
-
--- s2l (Snode Snum num exps)
---   Snode (Ssym "if" [cond, e1, e2]) =
---   Ltest (s2l cond) (s2l e1) (s2l e2)
-
--- exp '+' 
--- s2l (Ssym "+", [e1, e2]) =
---   Lsend (Lvar "+") [s2l e1, s2l e2]
-
--- -- exp '-'  
--- s2l (Slist [Ssym "-", e1, e2]) =
---   Lsend (Lvar "-") [s2l e1, s2l e2]
-
--- -- exp '*'  
--- s2l (Slist [Ssym "*", e1, e2]) =
---   Lsend (Lvar "*") [s2l e1, s2l e2]
-
--- -- exp '/' 
--- s2l (Slist [Ssym "/", e1, e2]) =
---   Lsend (Lvar "/") [s2l e1, s2l e2]
-
--- -- exp 'let' 
--- s2l (Slist [Ssym "let", Ssym x, e1, e2]) =
---   Llet x (s2l e1) (s2l e2)
-
--- -- exp 'fob'  
--- s2l (Slist (Ssym "fob" : Slist params : body : [])) =
---   let vars = map (\(Ssym v) -> v) params
---   in Lfob vars (s2l body)
-
--- -- exp 'fix'  
--- s2l (Slist (Ssym "fix" : Slist bindings : body : [])) =
---   let bindPairs = map (\(Slist [Ssym x, expr]) -> (x, s2l expr)) bindings
---   in Lfix bindPairs (s2l body)
-
--- -- exp 'pour autres fonctions'  
--- s2l (Slist (func : args)) =
---   Lsend (s2l func) (map s2l args)
-  
-s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
-
 ---------------------------------------------------------------------------
 -- Représentation du contexte d'exécution                                --
 ---------------------------------------------------------------------------
@@ -329,8 +275,48 @@ env0 = let binop f op =
 eval :: VEnv -> Lexp -> Value
 -- ¡¡ COMPLETER !!
 eval _ (Lnum n) = Vnum n
-                  
----------------------------------------------------------------------------
+
+-- On cherche value d'une variable
+eval env (Lvar v) =
+  case lookup v env of
+    Just val -> val
+    Nothing -> error ("Variable non définie: " ++ v)
+
+-- Evaluation if
+eval env (Ltest cond trueBranch falseBranch) =
+  case eval env cond of
+    Vbool True  -> eval env trueBranch
+    Vbool False -> eval env falseBranch
+    _ -> error "Condition must evaluate to a boolean"
+
+eval _ (Lbool b) = Vbool b
+eval env (Lfob params body) = Vfob env params body
+
+-- Évaluation d'un appel de fonction ou d'un objet fonctionnel.
+eval env (Lsend func args) =
+  case eval env func of
+    Vbuiltin f -> f (map (eval env) args)
+    Vfob closure params body ->
+      let argVals = map (eval env) args
+      in if length params == length argVals || True  -- Vérification du nombre d'arguments.
+         then let extendedEnv = zip params argVals ++ closure
+              in eval extendedEnv body
+         else error "Nombre d'arguments incorrect pour la fonction"
+    _ -> error "Application nécessite une fonction"
+
+-- Evaluation let
+eval env (Llet v e1 e2) =
+  let val = eval env e1
+      extendedEnv = (v, val) : env
+  in eval extendedEnv e2
+
+--evaluation fix
+eval env (Lfix bindings body) =
+  let recEnv = [(v, eval recEnv e) | (v, e) <- bindings] ++ env
+  in eval recEnv body
+  
+
+-------------------------------------------------
 -- Toplevel                                                              --
 ---------------------------------------------------------------------------
 
