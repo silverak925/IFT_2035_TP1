@@ -194,7 +194,44 @@ data Lexp = Lnum Int             -- Constante entière.
 s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
+<<<<<<< Updated upstream
 -- ¡¡COMPLÉTER ICI!!
+=======
+
+
+-- Analyse des Snodes possibles
+s2l (Snode (Ssym "if") [condition, trueBranch, falseBranch]) =
+  Ltest (s2l condition) (s2l trueBranch) (s2l falseBranch)
+
+s2l (Snode (Ssym "let") [Ssym var, expr, body]) =
+  Llet var (s2l expr) (s2l body)
+
+-- s2l (Snode (Ssym "lambda") [Snode (Ssym "params") paramList, body]) =
+--   Lfob (map s2lParam paramList) (s2l body)
+--   where
+--     s2lParam (Ssym v) = v
+--     s2lParam _ = error "Paramètre lambda invalide"
+
+-- Expression fob (lambda) dans Sexp
+s2l (Snode (Ssym "fob") [Snode (Ssym param1) paramList, body]) =
+  Lfob (param1 : (map s2lParam (paramList))) (s2l body)
+  where
+    s2lParam (Ssym v) = v
+    s2lParam _ = error "Lambda invalide"
+
+-- expression fix
+-- s2l (Snode (Ssym "fix") [Snode (Ssym "bindings") bindings, body]) =
+--   Lfix (map parseBinding bindings) (s2l body)
+--   where
+--     parseBinding (Snode (Ssym var) [expr]) = (var, s2l expr)
+--     parseBinding _ = error "fix invalide"
+
+s2l (Snode func args) = Lsend (s2l func) (map s2l args)
+
+s2l Snil = error "Liste vide inattendue"
+
+-- Erreur pour tout autre expression inconnue
+>>>>>>> Stashed changes
 s2l se = error ("Expression Psil inconnue: " ++ showSexp se)
 
 Snode Ssym "if" ["<", 2, 5]
