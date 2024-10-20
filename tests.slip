@@ -1,0 +1,29 @@
+;;; Tests.                  -*- mode: lisp-data; coding: utf-8 -*-
+
+
+
+(if (((x y) (< x y)) 2 4) (- 0 475) 0)   ; ↝ -475
+
+(< ((fob (x y) (* x y)) 2 9) 20)         ; ↝ True
+
+(let a 2 
+(let b 4 
+(let c 5 
+(let d 99 
+((
+    fob (w x y z) 
+        (/ z w (+ x y))
+) a b c d)
+))))                                     ; ↝ 3
+
+(fix (
+    (a 2)
+    (b 4)
+    (c 5)
+    (d 99)
+    ((calculation w x y z) (/ z w (+ x y)))
+) (calculation a b c d))                 ; ↝ 3
+
+(/ 34 0)                                 ; ↝ Exception: (divide by zero)
+
+(fob (x) (< (- 0 x) 0))                  ; ↝ <fobjet>
